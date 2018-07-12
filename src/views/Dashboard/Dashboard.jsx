@@ -43,7 +43,11 @@ import dashboardStyle from "assets/jss/material-dashboard-react/views/dashboardS
 
 class Dashboard extends React.Component {
   state = {
-    value: 0
+    value: 0,
+    weatherChartData: {
+      labels: [" ", " ", " ", " ", " ", " "],
+      series: [[0, 0, 0, 0, 0, 0]]
+    }
   };
   handleChange = (event, value) => {
     this.setState({ value });
@@ -52,6 +56,33 @@ class Dashboard extends React.Component {
   handleChangeIndex = index => {
     this.setState({ value: index });
   };
+
+  componentDidMount() {
+    fetch(
+      "http://api.openweathermap.org/data/2.5/forecast?q=London,us&mode=json&apikey=fe8a24b0bb1de313dee3fa0dcc20bc78&units=metric"
+    )
+      .then(res => res.json())
+      .then(result => {
+        let dailyMaxTemp = {};
+        for (let i = 0, l = result.list.length; i < l; i++) {
+          let record = result.list[i];
+          let dt = new Date(record.dt * 1000);
+          let dateString = dt.getMonth() + 1 + "/" + dt.getDate();
+          if (!dailyMaxTemp[dateString]) {
+            dailyMaxTemp[dateString] = record.main.temp_max;
+          } else if (dailyMaxTemp[dateString] < record.main.temp_max) {
+            dailyMaxTemp[dateString] = record.main.temp_max;
+          }
+        }
+        this.setState({
+          weatherChartData: {
+            labels: Object.keys(dailyMaxTemp),
+            series: [Object.values(dailyMaxTemp)]
+          }
+        });
+      });
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -135,22 +166,23 @@ class Dashboard extends React.Component {
         <Grid container>
           <GridItem xs={12} sm={12} md={4}>
             <Card chart>
+              {/*Here is an example of pulling from an api... I changed this one from daily sales to daily temperature forcast*/}
               <CardHeader color="success">
                 <ChartistGraph
                   className="ct-chart"
-                  data={dailySalesChart.data}
+                  data={this.state.weatherChartData}
                   type="Line"
                   options={dailySalesChart.options}
                   listener={dailySalesChart.animation}
                 />
               </CardHeader>
               <CardBody>
-                <h4 className={classes.cardTitle}>Daily Sales</h4>
+                <h4 className={classes.cardTitle}>Daily Max Temperature</h4>
                 <p className={classes.cardCategory}>
                   <span className={classes.successText}>
                     <ArrowUpward className={classes.upArrowCardCategory} /> 55%
                   </span>{" "}
-                  increase in today sales.
+                  increase, it is getting hot!
                 </p>
               </CardBody>
               <CardFooter chart>
@@ -158,6 +190,7 @@ class Dashboard extends React.Component {
                   <AccessTime /> updated 4 minutes ago
                 </div>
               </CardFooter>
+              {/*Here is an example of pulling from an api... I changed this one from daily sales to daily temperature forcast*/}
             </Card>
           </GridItem>
           <GridItem xs={12} sm={12} md={4}>
